@@ -66,4 +66,6 @@ public interface SistemaAdocaoAnimais {
 
 	public void adotarAnimal(Animal animal, Usuario dono) throws AnimalNaoExisteException;
 
+	public void removeDuplicatas();
+
 }

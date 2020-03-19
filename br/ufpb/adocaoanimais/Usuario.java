@@ -60,14 +60,25 @@ public class Usuario {
 	}
 
 	public String getDados() {
-		String strReturn = "• " + this.nome + "\nCPF ou CNPJ: " + this.cpf + "\nNascimento: " + this.dataNascimento;
+		String strReturn = " " + this.nome + "\nCPF ou CNPJ: " + this.cpf + "\nNascimento: " + this.dataNascimento;
 		if (!this.requisitos.isEmpty()) {
-			strReturn += "\n• Requisitos:";
+			strReturn += "\n► Requisitos:";
 			for (Requisito r : this.requisitos) {
-				strReturn += "\n  ○ " + r.getNomeRequisito() + " - " + r.getValorEsperadoRequisito();
+				strReturn += "\n  • " + r.getNomeRequisito() + " - " + r.getValorEsperadoRequisito();
 			}
 		}
 		return strReturn;
+	}
+
+	@Override
+	public boolean equals(Object comparator) {
+		if (!(comparator instanceof Usuario)){
+			return false;
+		} else {
+			Usuario comparatorU = (Usuario) comparator;
+			return (this.cpf.equals(comparatorU.cpf));
+		}
+
 	}
 
 	public String salvar(String separator, String reqSeparator, String reqInternalSeparator) {

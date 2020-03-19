@@ -23,5 +23,9 @@ public class Requisito {
 		this.valorEsperadoRequisito = valorEsperadoRequisito;
 	}
 	
+	@Override
+	public String toString(){
+		return this.nomeRequisito + ": " + this.valorEsperadoRequisito;
+	}
 	
 }

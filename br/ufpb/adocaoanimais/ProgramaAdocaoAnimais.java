@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
 
 /**
  * Programa principal para o Sistema de Adoção de Animais
@@ -68,6 +69,11 @@ public class ProgramaAdocaoAnimais {
 
 	public static void main(String[] args) {
 
+		UIManager.put("OptionPane.cancelButtonText", "Voltar");
+		UIManager.put("OptionPane.yesButtonText", "Sim");
+		UIManager.put("OptionPane.noButtonText", "Não");
+		UIManager.put("OptionPane.okButtonText", "Continuar");
+
 		// Objeto do Sistema
 		SistemaAdocaoAnimais sistema = new SistemaAdocaoAnimaisList();
 
@@ -84,30 +90,50 @@ public class ProgramaAdocaoAnimais {
 
 		try {
 			List<Animal> leitura = lerAnimais();
+			List<Animal> podemSerCadastrados = new ArrayList<>();
 			// TODO: Separar os cadastrados
 			for (Animal a : leitura) {
-				sistema.cadastraAnimal(a);
-				if (!a.getDono().getCpf().equals("NONE")) {
+				try {
+					sistema.pesquisaAnimal(a.getCodigo());
+				} catch (AnimalNaoExisteException e) {
+					podemSerCadastrados.add(a);
+				}
+			}
+
+			for (Animal a : podemSerCadastrados) {
+				if (a.getDono().getCpf().equals("NONE")) {
+					a.setDono(new Usuario("NONE", "NONE", "", null));
+					sistema.cadastraAnimal(a);
+				} else {
 					try {
+						sistema.cadastraAnimal(a);
 						sistema.adotarAnimal(a, a.getDono());
-					} catch (Exception e) {
-						JOptionPane.showMessageDialog(null, e.getMessage());
+					} catch (AnimalNaoExisteException e) {
 					}
 				}
 			}
+
+			// sistema.cadastraAnimal(a);
+			// if (!a.getDono().getCpf().equals("NONE")) {
+			// try {
+			// sistema.adotarAnimal(a, a.getDono());
+			// } catch (Exception e) {
+			// JOptionPane.showMessageDialog(null, e.getMessage());
+			// }
+			// }
 		} catch (IOException e) {
 			// mensagemCriarArquivos = true;
 			// JOptionPane.showMessageDialog(null, "Não foi possível recuperar os dos
 			// animais do Sistema.");
 		}
 
-		
 		// if (mensagemCriarArquivos) {
-		// 	try {
-		// 		gravarDados(sistema);
-		// 		JOptionPane.showMessageDialog(null, "Criando arquivos para salvamento dos dados.");
-		// 	} catch (IOException e) {
-		// 	}
+		// try {
+		// gravarDados(sistema);
+		// JOptionPane.showMessageDialog(null, "Criando arquivos para salvamento dos
+		// dados.");
+		// } catch (IOException e) {
+		// }
 		// }
 
 		boolean sair = false;
@@ -116,10 +142,11 @@ public class ProgramaAdocaoAnimais {
 		Usuario u;
 
 		while (!sair) {
-			try {
-				gravarDados(sistema);
-			} catch (IOException e) {
-			}
+			// sistema.removeDuplicatas();
+			// try {
+			// gravarDados(sistema);
+			// } catch (IOException e) {
+			// }
 			String escolhaString = null;
 			try {
 				escolhaString = pedirDado("Escolha uma opção", OPCOES).toString();
@@ -205,6 +232,8 @@ public class ProgramaAdocaoAnimais {
 								} catch (OperacaoCanceladaException e1) {
 									JOptionPane.showMessageDialog(null, e.getMessage());
 								}
+							} catch (OperacaoCanceladaException e) {
+								JOptionPane.showMessageDialog(null, e.getMessage());
 							}
 						} else if (escolha.equals("Descadastrar um usuário")) {
 							if (!sistema.temUsuarios()) {
@@ -465,8 +494,9 @@ public class ProgramaAdocaoAnimais {
 					try {
 						Usuario adotador = (Usuario) pedirDado("Escolha o usuário que irá adotar o animal.",
 								sistema.getUsuarios().toArray());
-						Animal animalAdotado = (Animal) pedirDado("Escolha o animal a ser adotado",
-								sistema.getAnimais().toArray());
+
+						Object[] animaisDisponiveis = sistema.getAnimais().toArray();
+						Animal animalAdotado = (Animal) pedirDado("Escolha o animal a ser adotado", animaisDisponiveis);
 
 						List<String> errosRequisitos = sistema.compararRequisitos(animalAdotado, adotador);
 
@@ -561,16 +591,24 @@ public class ProgramaAdocaoAnimais {
 	 * @throws IOException Caso não seja possível gravar os dados do {@code sistema}
 	 */
 	private static void gravarDados(SistemaAdocaoAnimais sistema) throws IOException {
+		// List com todos os usuários do Sistema
 		List<Usuario> dataUsuario = sistema.getUsuarios();
 
+		// List com os animais adotados ou não do sistema
 		List<Animal> dataAnimais = sistema.getAnimais();
 		sistema.getAnimaisAdotados().forEach(a -> dataAnimais.add(a));
 
 		GravadorDeDados gravador = new GravadorDeDados();
 		try {
+			// List de String que será usada no gravador
 			List<String> data = new ArrayList<>();
+
+			// Põe a String de salvar o usuário na List dada
 			for (Usuario u : dataUsuario) {
 				String dado = u.salvar(SEPARADOR, REQUISITO_SEPARADOR, REQUISITO_INTERNAL_SEPARADOR);
+
+				// Estava com um problema de salvar o mesmo animal várias vezes, então
+				// verifiquei para ter certeza que cada coisa será salva apenas uma vez
 				boolean podeSalvar = true;
 				for (String linha : data) {
 					if (linha.equals(dado)) {
@@ -582,6 +620,7 @@ public class ProgramaAdocaoAnimais {
 					data.add(dado);
 				}
 			}
+			// Salva os dados no arquivo
 			gravador.gravaTextoEmArquivo(data, DATA_DIRECTORY + "users.txt");
 
 			data = new ArrayList<>();
@@ -615,19 +654,25 @@ public class ProgramaAdocaoAnimais {
 		GravadorDeDados gravador = new GravadorDeDados();
 		List<String> usersStringList = gravador.recuperaTextoEmArquivo(DATA_DIRECTORY + "users.txt");
 
+		// List com os usuários que serão retornados
 		List<Usuario> userList = new ArrayList<>(0);
 		for (String u : usersStringList) {
 			List<Requisito> requisitos = new ArrayList<>(0);
 
 			// Divide a String a usando a constante do separador
 			String[] uSplit = u.split(SEPARADOR);
+
+			// Verifica se o usuário possui requisitos
 			if (!uSplit[3].equals("NONE")) {
+				// Separa cada requisito pela constante do separador
 				String[] userReqs = uSplit[3].split(REQUISITO_SEPARADOR);
 				for (String reqsString : userReqs) {
+					// Separa o nome e o valor do requisito pela constante do Separador
 					String[] reqUser = reqsString.split(REQUISITO_INTERNAL_SEPARADOR);
 					requisitos.add(new Requisito(reqUser[0], reqUser[1]));
 				}
 			}
+			// Cria o usuário de o coloca na List
 			userList.add(new Usuario(uSplit[0], uSplit[1], uSplit[2], requisitos));
 		}
 		return userList;
@@ -635,7 +680,8 @@ public class ProgramaAdocaoAnimais {
 
 	/**
 	 * Método para ler os {@code Animais} salvos pelo método
-	 * {@code gravarDados(SistemaAdocaoAnimais)}.
+	 * {@code gravarDados(SistemaAdocaoAnimais)}. Funciona semelhante ao método
+	 * {@code lerUsuarios()}.
 	 * 
 	 * @return {@code List<Animal>} com todos os animais lidos.
 	 * 
@@ -703,8 +749,8 @@ public class ProgramaAdocaoAnimais {
 
 		String dado = "";
 		while (!dadoValido) {
+			// Verifica se é a primeira vez que usuário informa o dado
 			if (primeiraTentativa) {
-				// Verifica se é a primeira vez que usuário informa o dado
 				dado = JOptionPane.showInputDialog(mensagem);
 
 				primeiraTentativa = false;
@@ -741,17 +787,12 @@ public class ProgramaAdocaoAnimais {
 				none = dado.equalsIgnoreCase("none");
 
 				// Verifica se foi inserido algum caractere invalido no dado
-				ArrayList<String> charsInvalidos = new ArrayList<>(0);
+				charInvalidoNoDado = false;
 				for (String invalid : CHARS_INVALIDOS) {
 					if (dado.contains(invalid)) {
-						charsInvalidos.add(invalid);
+						charInvalidoNoDado = true;
+						break;
 					}
-				}
-
-				if (!charsInvalidos.isEmpty()) {
-					charInvalidoNoDado = true;
-				} else {
-					charInvalidoNoDado = false;
 				}
 
 				// Verifica se o dado é válido
@@ -765,32 +806,28 @@ public class ProgramaAdocaoAnimais {
 	}
 
 	/**
-	 * Pede que o usuário escolha uma opção dentre uma lista de opções
+	 * Pede que o usuário escolha uma opção dentre uma lista de opções.
 	 *
-	 * @param mensagem A mensagem que aparece na tela
-	 * @param opcoes   As opções que podem ser escolhidas pelo usuário
+	 * @param mensagem A mensagem que aparece na tela.
+	 * @param opcoes   As opções que podem ser escolhidas pelo usuário.
 	 * 
 	 * @return Um {@code Object} correspondente ao {@code Object} escolhido dentre
-	 *         as {@code opcoes}
+	 *         as {@code opcoes}.
 	 * 
-	 * @throws OperacaoCanceladaException se o usuário pressionar "Cancel"
+	 * @throws OperacaoCanceladaException se o usuário pressionar "Cancel".
 	 */
 	private static Object pedirDado(String mensagem, Object[] opcoes) throws OperacaoCanceladaException {
-		// O método agora não retorna uma String e sim um Object
 		Object dado = null;
 
-		// Vou perguntar qual a escolha da pessoa e agora não tem toString() porque não
-		// quero mais uma String, deixa no Object mesmo
+		// Pede que o usuário escolha uma opção dentro da lista
 		dado = JOptionPane.showInputDialog(null, mensagem, "Sistema de Adoção de Animais", JOptionPane.PLAIN_MESSAGE,
 				null, opcoes, opcoes[0]);
 
-		// Checando se a pessoa apertou "Cancel", não precisa mais checar se está vazio
-		// porque não tem como já que ela clicou na opção
+		// Verifica se o botão "Cancel" foi pressionado
 		if (dado == null) {
 			throw new OperacaoCanceladaException("A operação foi cancelada pelo usuário.");
 		}
-		// Se chegar aqui é porque não lançou o erro então o dado não é null então a
-		// pessoa escolheu alguma coisa
+		// Caso não, o dado é retornado
 		return dado;
 	}
 
@@ -805,9 +842,14 @@ public class ProgramaAdocaoAnimais {
 	 * @throws OperacaoCanceladaException se o usuário pressionar "Cancel"
 	 */
 	private static boolean pedirSimNao(String mensagem) throws OperacaoCanceladaException {
-		String[] simNao = { "Sim", "Não", "Cancelar" };
+		// Array com as opções do usuário
+		String[] simNao = { "Sim", "Não", "Voltar" };
+
+		// Pede que o usuário escolha uma das opções
 		String resposta = simNao[JOptionPane.showOptionDialog(null, mensagem, "Sistema Adoção de Animais",
-				JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, simNao, simNao[0])];
+				JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null, simNao, simNao[0])];
+
+		// Verifica qual a resposta do usuário
 		switch (resposta) {
 			case "Sim":
 				return true;
@@ -816,6 +858,8 @@ public class ProgramaAdocaoAnimais {
 			case "Cancelar":
 				throw new OperacaoCanceladaException("A operação foi cancelada pelo usuário");
 		}
+
+		// Em caso de algum erro desconhecido, retorna false
 		return false;
 	}
 }

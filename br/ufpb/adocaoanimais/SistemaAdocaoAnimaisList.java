@@ -138,18 +138,36 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 
 	@Override
 	public void descadastrarAnimal(Animal animal) throws AnimalNaoExisteException {
-		if (this.existeAnimal(animal)) {
-			this.animais.remove(animal);
+		ArrayList<Animal> novosAnimais = new ArrayList<>();
+
+		this.animais.stream().filter(a -> !a.equals(animal)).forEach(a -> novosAnimais.add(a));
+
+		// for (Animal aniSistema : this.animais) {
+		// if (!aniSistema.equals(animal)) {
+		// novosAnimais.add(aniSistema);
+		// }
+		// }
+
+		if (novosAnimais.size() == this.animais.size()) {
+			throw new AnimalNaoExisteException("Houve um erro no descadastramento do animal.");
 		} else {
-			throw new AnimalNaoExisteException("O animal informado não está cadastrado no sitema.");
+			this.animais = novosAnimais;
 		}
 	}
 
 	@Override
 	public void adotarAnimal(Animal animal, Usuario dono) throws AnimalNaoExisteException {
-		this.descadastrarAnimal(animal);
-		animal.setDono(dono);
-		this.animaisAdotados.add(animal);
+		boolean deuRuim = false;
+		try {
+			this.descadastrarAnimal(animal);
+		} catch (AnimalNaoExisteException e) {
+			deuRuim = true;
+			throw e;
+		}
+		if (!deuRuim) {
+			animal.setDono(dono);
+			this.animaisAdotados.add(animal);
+		}
 	}
 
 	@Override
@@ -241,5 +259,54 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 			throw new UsuarioNaoExisteException("O usuário informado não está cadastrado.");
 		}
 
+	}
+
+	@Override
+	public void removeDuplicatas() {
+		ArrayList<Usuario> usuariosCorrigidos = new ArrayList<>();
+		ArrayList<Animal> animaisCorrigidos = new ArrayList<>();
+		ArrayList<Animal> animaisAdotadosCorrigidos = new ArrayList<>();
+
+		for (Usuario userSistema : this.usuarios) {
+			boolean podeCadastrar = true;
+			for (Usuario userCorrige : usuariosCorrigidos) {
+				if (userSistema.getCpf().equals(userCorrige.getCpf())) {
+					podeCadastrar = false;
+					break;
+				}
+			}
+			if (podeCadastrar) {
+				usuariosCorrigidos.add(userSistema);
+			}
+		}
+		for (Animal aniSistema : this.animaisAdotados) {
+			boolean podeCadastrar = true;
+			for (Animal aniCorrige : animaisAdotadosCorrigidos) {
+				if (aniSistema.equals(aniCorrige)) {
+					podeCadastrar = false;
+					break;
+				}
+			}
+			if (podeCadastrar) {
+				animaisAdotadosCorrigidos.add(aniSistema);
+			}
+		}
+
+		for (Animal aniSistema : this.animais) {
+			boolean podeCadastrar = true;
+			for (Animal aniCorrige : animaisCorrigidos) {
+				if (aniSistema.equals(aniCorrige)) {
+					podeCadastrar = false;
+					break;
+				}
+			}
+			if (podeCadastrar) {
+				animaisCorrigidos.add(aniSistema);
+			}
+		}
+
+		this.animais = animaisCorrigidos;
+		this.usuarios = usuariosCorrigidos;
+		this.animaisAdotados = animaisAdotadosCorrigidos;
 	}
 }

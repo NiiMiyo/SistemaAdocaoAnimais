@@ -77,7 +77,7 @@ public abstract class Animal {
 		strReturn += "\n• Alimentação:\n  " + this.tipoAlimentacao;
 		strReturn += "\n• Detalhes:\n  " + this.detalhes;
 
-		if (!this.dono.getCpf().equals("NONE")){
+		if (!this.dono.getCpf().equals("NONE")) {
 			strReturn += "\n\nAdotado por: " + dono.toString();
 		}
 
@@ -196,6 +196,16 @@ public abstract class Animal {
 
 	public void setDono(Usuario dono) {
 		this.dono = dono;
+	}
+
+	@Override
+	public boolean equals(Object comparator) {
+		if (!(comparator instanceof Animal)) {
+			return false;
+		}
+		Animal objeto = (Animal) comparator;
+
+		return (this.codigo.equals(objeto.codigo));
 	}
 
 	public String salvar(String separator) {
