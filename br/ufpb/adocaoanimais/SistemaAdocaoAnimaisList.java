@@ -76,7 +76,9 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 	@Override
 	public List<Animal> pesquisaAnimaisDoTipo(String tipo) {
 		ArrayList<Animal> animalListReturn = new ArrayList<>(0);
+
 		this.animais.stream().filter(k -> k.getTipo().equalsIgnoreCase(tipo)).forEach(k -> animalListReturn.add(k));
+
 		return animalListReturn;
 	}
 
@@ -109,7 +111,7 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 	@Override
 	public boolean existeUsuario(Usuario user) {
 		for (Usuario u : this.usuarios) {
-			if (u.getCpf().equalsIgnoreCase(user.getCpf())) {
+			if (u.equals(user)) {
 				return true;
 			}
 		}
@@ -129,7 +131,7 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 	@Override
 	public boolean existeAnimal(Animal animal) {
 		for (Animal a : this.animais) {
-			if (a.getCodigo().equals(animal.getCodigo())) {
+			if (a.equals(animal)) {
 				return true;
 			}
 		}
@@ -138,20 +140,9 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 
 	@Override
 	public void descadastrarAnimal(Animal animal) throws AnimalNaoExisteException {
-		ArrayList<Animal> novosAnimais = new ArrayList<>();
 
-		this.animais.stream().filter(a -> !a.equals(animal)).forEach(a -> novosAnimais.add(a));
-
-		// for (Animal aniSistema : this.animais) {
-		// if (!aniSistema.equals(animal)) {
-		// novosAnimais.add(aniSistema);
-		// }
-		// }
-
-		if (novosAnimais.size() == this.animais.size()) {
+		if (!this.animais.remove(animal)) {
 			throw new AnimalNaoExisteException("Houve um erro no descadastramento do animal.");
-		} else {
-			this.animais = novosAnimais;
 		}
 	}
 
@@ -232,12 +223,9 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 						erroRequisito.add("O usuário deseja um animal que seja \"" + valorRequisito
 								+ "\", mas o animal é \"" + vacina + "\".");
 					}
-
 				}
 			}
-
 		}
-
 		return erroRequisito;
 	}
 
@@ -258,7 +246,6 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 		} else {
 			throw new UsuarioNaoExisteException("O usuário informado não está cadastrado.");
 		}
-
 	}
 
 	@Override
@@ -270,7 +257,7 @@ public class SistemaAdocaoAnimaisList implements SistemaAdocaoAnimais {
 		for (Usuario userSistema : this.usuarios) {
 			boolean podeCadastrar = true;
 			for (Usuario userCorrige : usuariosCorrigidos) {
-				if (userSistema.getCpf().equals(userCorrige.getCpf())) {
+				if (userSistema.equals(userCorrige)) {
 					podeCadastrar = false;
 					break;
 				}

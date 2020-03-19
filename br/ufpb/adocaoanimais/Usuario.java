@@ -71,12 +71,12 @@ public class Usuario {
 	}
 
 	@Override
-	public boolean equals(Object comparator) {
-		if (!(comparator instanceof Usuario)){
+	public boolean equals(Object anObject) {
+		if (!(anObject instanceof Usuario)){
 			return false;
 		} else {
-			Usuario comparatorU = (Usuario) comparator;
-			return (this.cpf.equals(comparatorU.cpf));
+			Usuario comparatorU = (Usuario) anObject;
+			return (this.cpf.equalsIgnoreCase(comparatorU.cpf));
 		}
 
 	}

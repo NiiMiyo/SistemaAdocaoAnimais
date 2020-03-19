@@ -77,32 +77,22 @@ public class ProgramaAdocaoAnimais {
 		// Objeto do Sistema
 		SistemaAdocaoAnimais sistema = new SistemaAdocaoAnimaisList();
 
-		// boolean mensagemCriarArquivos = false;
-
 		try {
+			// Lê os dados salvos e recadastra os usuários no sistema
 			List<Usuario> leitura = lerUsuarios();
 			leitura.forEach(user -> sistema.cadastraUsuario(user));
 		} catch (IOException e) {
-			// mensagemCriarArquivos = true;
-			// JOptionPane.showMessageDialog(null, "Não foi possível recuperar os dos
-			// usuários do Sistema.");
 		}
 
 		try {
+			// Lê os dados salvos e recadastra os animais no sistema
 			List<Animal> leitura = lerAnimais();
-			List<Animal> podemSerCadastrados = new ArrayList<>();
-			// TODO: Separar os cadastrados
-			for (Animal a : leitura) {
-				try {
-					sistema.pesquisaAnimal(a.getCodigo());
-				} catch (AnimalNaoExisteException e) {
-					podemSerCadastrados.add(a);
-				}
-			}
 
-			for (Animal a : podemSerCadastrados) {
-				if (a.getDono().getCpf().equals("NONE")) {
-					a.setDono(new Usuario("NONE", "NONE", "", null));
+			Usuario comparadorSemDono = new Usuario("NONE", "NONE", "", null);
+
+			for (Animal a : leitura) {
+				if (a.getDono().equals(comparadorSemDono)) {
+					a.setDono(comparadorSemDono);
 					sistema.cadastraAnimal(a);
 				} else {
 					try {
@@ -112,41 +102,17 @@ public class ProgramaAdocaoAnimais {
 					}
 				}
 			}
-
-			// sistema.cadastraAnimal(a);
-			// if (!a.getDono().getCpf().equals("NONE")) {
-			// try {
-			// sistema.adotarAnimal(a, a.getDono());
-			// } catch (Exception e) {
-			// JOptionPane.showMessageDialog(null, e.getMessage());
-			// }
-			// }
 		} catch (IOException e) {
-			// mensagemCriarArquivos = true;
-			// JOptionPane.showMessageDialog(null, "Não foi possível recuperar os dos
-			// animais do Sistema.");
 		}
-
-		// if (mensagemCriarArquivos) {
-		// try {
-		// gravarDados(sistema);
-		// JOptionPane.showMessageDialog(null, "Criando arquivos para salvamento dos
-		// dados.");
-		// } catch (IOException e) {
-		// }
-		// }
 
 		boolean sair = false;
 
+		// Algumas variáveis, pode ignorar
 		String nome = "", codigo = "", tipo = "", cpf = "";
 		Usuario u;
 
 		while (!sair) {
-			// sistema.removeDuplicatas();
-			// try {
-			// gravarDados(sistema);
-			// } catch (IOException e) {
-			// }
+
 			String escolhaString = null;
 			try {
 				escolhaString = pedirDado("Escolha uma opção", OPCOES).toString();
@@ -161,6 +127,7 @@ public class ProgramaAdocaoAnimais {
 				sair = true;
 				break;
 			}
+
 			switch (escolhaString) {
 				case "Gerenciar usuários":
 					try {
@@ -608,7 +575,7 @@ public class ProgramaAdocaoAnimais {
 				String dado = u.salvar(SEPARADOR, REQUISITO_SEPARADOR, REQUISITO_INTERNAL_SEPARADOR);
 
 				// Estava com um problema de salvar o mesmo animal várias vezes, então
-				// verifiquei para ter certeza que cada coisa será salva apenas uma vez
+				// verifiquei para ter certeza que cada um será salvo apenas uma vez
 				boolean podeSalvar = true;
 				for (String linha : data) {
 					if (linha.equals(dado)) {
@@ -832,14 +799,14 @@ public class ProgramaAdocaoAnimais {
 	}
 
 	/**
-	 * Pede para que o usuário escolha entre "Sim" ou "Não"
+	 * Pede para que o usuário escolha entre "Sim" ou "Não".
 	 *
-	 * @param mensagem A mensagem que aparece na tela
+	 * @param mensagem A mensagem que aparece na tela.
 	 * 
 	 * @return {@code true} se o usuário pressionar "Sim" e {@code false} se o
 	 *         usuário pressionar "Não".
 	 * 
-	 * @throws OperacaoCanceladaException se o usuário pressionar "Cancel"
+	 * @throws OperacaoCanceladaException se o usuário pressionar "Voltar".
 	 */
 	private static boolean pedirSimNao(String mensagem) throws OperacaoCanceladaException {
 		// Array com as opções do usuário
@@ -855,7 +822,7 @@ public class ProgramaAdocaoAnimais {
 				return true;
 			case "Não":
 				return false;
-			case "Cancelar":
+			case "Voltar":
 				throw new OperacaoCanceladaException("A operação foi cancelada pelo usuário");
 		}
 
